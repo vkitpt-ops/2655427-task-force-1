@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace TaskForce\Logic;
+
 class Task
 {
     public const STATUS_NEW = 'new';

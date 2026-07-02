@@ -1,0 +1,15 @@
+{
+    "name": "victoriatupitskaya/2655427-task-force-1",
+    "autoload": {
+        "psr-4": {
+            "TaskForce\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Victoria",
+            "email": "vki.tpt@gmail.com"
+        }
+    ],
+    "require": {}
+}
