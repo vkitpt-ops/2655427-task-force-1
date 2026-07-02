@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-require_once 'autoload.php';
+require_once __DIR__ . '/vendor/autoload.php';
+
+use TaskForce\Logic\Task;
 
 $task = new Task(5, 10);
 
