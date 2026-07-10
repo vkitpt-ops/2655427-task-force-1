@@ -4,6 +4,22 @@ declare(strict_types=1);
 
 namespace TaskForce\Logic;
 
+use TaskForce\Logic\Actions\RespondAction;
+use TaskForce\Logic\Actions\CancelAction;
+use TaskForce\Logic\Actions\StartAction;
+use TaskForce\Logic\Actions\FinishAction;
+use TaskForce\Logic\Actions\RefuseAction;
+
+
+/**
+ * Класс Task описывает бизнес-логику задания.
+ *
+ * Определяет:
+ * - возможные статусы задания;
+ * - переходы между статусами;
+ * - доступные действия в зависимости от статуса;
+ * - действия, доступные текущему пользователю.
+ */
 class Task
 {
     public const STATUS_NEW = 'new';
@@ -19,8 +35,25 @@ class Task
     public const ACTION_REFUSE = 'refuse';
 
     private int $customerId;
-    private ?int $workerId;
+    private ?int $executorId;
 
+    /**
+     * Создаёт объект задания.
+     *
+     * @param int $customerId ID заказчика задания.
+     * @param int|null $executorId ID исполнителя задания или null, если исполнитель ещё не назначен.
+     */
+    public function __construct(int $customerId, ?int $executorId = null)
+    {
+        $this->customerId = $customerId;
+        $this->executorId = $executorId;
+    }
+
+    /**
+     * Возвращает список всех статусов задания.
+     *
+     * @return array Массив вида [код статуса => название].
+     */
     public function getStatusesMap(): array
     {
         return [
@@ -32,17 +65,13 @@ class Task
         ];
     }
 
-    public function getActionsMap(): array
-    {
-        return [
-            self::ACTION_RESPOND => 'Откликнуться',
-            self::ACTION_CANCEL => 'Отменить',
-            self::ACTION_START => 'Принять',
-            self::ACTION_FINISH => 'Завершить',
-            self::ACTION_REFUSE => 'Отказаться',
-        ];
-    }
-
+    /**
+     * Определяет следующий статус задания для указанного действия.
+     *
+     * @param string $action Внутреннее имя действия.
+     *
+     * @return string|null Следующий статус или null, если действие не приводит к смене статуса.
+     */
     public function getNextStatus(string $action): ?string
     {
         $map = [
@@ -55,21 +84,26 @@ class Task
         return $map[$action] ?? null;
     }
 
-    public function getAvailableActions(string $status): array
+    /**
+     * Возвращает список действий, доступных для указанного статуса.
+     *
+     * @return array Список объектов действий.
+     */
+    private function getActionsByStatus(string $status): array
     {
         switch ($status) {
 
             case self::STATUS_NEW:
                 return [
-                    self::ACTION_RESPOND,
-                    self::ACTION_CANCEL,
-                    self::ACTION_START
+                    new RespondAction(),
+                    new CancelAction(),
+                    new StartAction()
                 ];
 
             case self::STATUS_WORK:
                 return [
-                    self::ACTION_FINISH,
-                    self::ACTION_REFUSE
+                    new FinishAction(),
+                    new RefuseAction()
                 ];
 
             default:
@@ -77,9 +111,32 @@ class Task
         }
     }
 
-    public function __construct(int $customerId, ?int $workerId = null)
+    /**
+     * Возвращает список действий, которые доступны текущему пользователю.
+     *
+     * Сначала определяются действия, доступные для статуса задания,
+     * затем они фильтруются с помощью проверки прав.
+     *
+     * @param string $status Текущий статус задания.
+     * @param int $currentUserId ID текущего пользователя.
+     *
+     * @return array Список объектов действий.
+     */
+    public function getAvailableActions(string $status, int $currentUserId): array
     {
-        $this->customerId = $customerId;
-        $this->workerId = $workerId;
+        $actions = $this->getActionsByStatus($status);
+        $availableActions = [];
+
+        foreach ($actions as $action) {
+            if ($action->checkRights(
+                $this->customerId,
+                $this->executorId,
+                $currentUserId
+            )) {
+                $availableActions[] = $action;
+            }
+        }
+
+        return $availableActions;
     }
 }
