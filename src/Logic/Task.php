@@ -9,134 +9,63 @@ use TaskForce\Logic\Actions\CancelAction;
 use TaskForce\Logic\Actions\StartAction;
 use TaskForce\Logic\Actions\FinishAction;
 use TaskForce\Logic\Actions\RefuseAction;
-
+use TaskForce\Logic\Enums\TaskAction;
+use TaskForce\Logic\Enums\TaskStatus;
 
 /**
- * Класс Task описывает бизнес-логику задания.
+ * Представляет задание.
  *
- * Определяет:
- * - возможные статусы задания;
- * - переходы между статусами;
- * - доступные действия в зависимости от статуса;
- * - действия, доступные текущему пользователю.
+ * Хранит информацию о заказчике, исполнителе и текущем статусе задания.
+ * Для определения доступных действий и изменения статуса использует
+ * объект TaskStateMachine.
  */
 class Task
 {
-    public const STATUS_NEW = 'new';
-    public const STATUS_CANCEL = 'cancel';
-    public const STATUS_WORK = 'work';
-    public const STATUS_DONE = 'done';
-    public const STATUS_FAILED = 'failed';
-
-    public const ACTION_RESPOND = 'respond';
-    public const ACTION_CANCEL = 'cancel';
-    public const ACTION_START = 'start';
-    public const ACTION_FINISH = 'finish';
-    public const ACTION_REFUSE = 'refuse';
-
     private int $customerId;
     private ?int $executorId;
+    private TaskStatus $status;
 
     /**
      * Создаёт объект задания.
      *
      * @param int $customerId ID заказчика задания.
      * @param int|null $executorId ID исполнителя задания или null, если исполнитель ещё не назначен.
+     * @param TaskStatus $status Текущий статус задания.
      */
-    public function __construct(int $customerId, ?int $executorId = null)
+    public function __construct(int $customerId, ?int $executorId = null, TaskStatus $status)
     {
         $this->customerId = $customerId;
         $this->executorId = $executorId;
+        $this->status = $status;
     }
 
     /**
-     * Возвращает список всех статусов задания.
+     * Возвращает список действий, доступных текущему пользователю.
      *
-     * @return array Массив вида [код статуса => название].
-     */
-    public function getStatusesMap(): array
-    {
-        return [
-            self::STATUS_NEW => 'Новое',
-            self::STATUS_CANCEL => 'Отменено',
-            self::STATUS_WORK => 'В работе',
-            self::STATUS_DONE => 'Выполнено',
-            self::STATUS_FAILED => 'Провалено',
-        ];
-    }
-
-    /**
-     * Определяет следующий статус задания для указанного действия.
+     * Делегирует проверку доступных действий объекту TaskStateMachine.
      *
-     * @param string $action Внутреннее имя действия.
-     *
-     * @return string|null Следующий статус или null, если действие не приводит к смене статуса.
-     */
-    public function getNextStatus(string $action): ?string
-    {
-        $map = [
-            self::ACTION_CANCEL => self::STATUS_CANCEL,
-            self::ACTION_START => self::STATUS_WORK,
-            self::ACTION_FINISH => self::STATUS_DONE,
-            self::ACTION_REFUSE => self::STATUS_FAILED,
-        ];
-
-        return $map[$action] ?? null;
-    }
-
-    /**
-     * Возвращает список действий, доступных для указанного статуса.
-     *
-     * @return array Список объектов действий.
-     */
-    private function getActionsByStatus(string $status): array
-    {
-        switch ($status) {
-
-            case self::STATUS_NEW:
-                return [
-                    new RespondAction(),
-                    new CancelAction(),
-                    new StartAction()
-                ];
-
-            case self::STATUS_WORK:
-                return [
-                    new FinishAction(),
-                    new RefuseAction()
-                ];
-
-            default:
-                return [];
-        }
-    }
-
-    /**
-     * Возвращает список действий, которые доступны текущему пользователю.
-     *
-     * Сначала определяются действия, доступные для статуса задания,
-     * затем они фильтруются с помощью проверки прав.
-     *
+     * @param TaskStateMachine $machine Объект конечного автомата задания.
      * @param string $status Текущий статус задания.
      * @param int $currentUserId ID текущего пользователя.
      *
-     * @return array Список объектов действий.
+     * @return array Список доступных действий.
      */
-    public function getAvailableActions(string $status, int $currentUserId): array
+    public function getAvailableActions(TaskStateMachine $machine, int $currentUserId): array
     {
-        $actions = $this->getActionsByStatus($status);
-        $availableActions = [];
+        return $machine->getAllowedActions($this->status, $this->customerId, $currentUserId, $this->executorId);
 
-        foreach ($actions as $action) {
-            if ($action->checkRights(
-                $this->customerId,
-                $this->executorId,
-                $currentUserId
-            )) {
-                $availableActions[] = $action;
-            }
-        }
+    }
 
-        return $availableActions;
+    /**
+     * Выполняет действие над заданием и изменяет его статус.
+     *
+     * Новый статус определяется объектом TaskStateMachine.
+     *
+     * @param TaskStateMachine $machine Объект конечного автомата задания.
+     * @param TaskAction $action Выполняемое действие.
+     */
+    public function apply(TaskStateMachine $machine, TaskAction $action): void
+    {
+        $this->status = $machine->transition($this->status, $action);
     }
 }
