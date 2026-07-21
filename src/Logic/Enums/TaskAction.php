@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace TaskForce\Logic\Enums;
 
-use TaskForce\Logic\Enums\TaskStatus;
+use TaskForce\Logic\Exceptions\TaskException;
 
 /**
  * Перечисление всех возможных действий над заданием.
@@ -38,7 +38,7 @@ enum TaskAction: string
      *
      * @return TaskStatus Новый статус задания.
      *
-     * @throws LogicException Если действие не приводит к смене статуса.
+     * @throws TaskException Если действие не приводит к смене статуса.
      */
     public function resultingStatus(): TaskStatus
     {
@@ -47,7 +47,7 @@ enum TaskAction: string
             self::Start => TaskStatus::Work,
             self::Finish => TaskStatus::Done,
             self::Refuse => TaskStatus::Failed,
-            self::Respond => throw new \LogicException("Respond action does not change status directly"),
+            self::Respond => throw new TaskException('Действие Respond не изменяет статус задания.'),
         };
     }
 
