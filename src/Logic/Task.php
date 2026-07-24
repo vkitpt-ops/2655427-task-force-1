@@ -4,11 +4,6 @@ declare(strict_types=1);
 
 namespace TaskForce\Logic;
 
-use TaskForce\Logic\Actions\RespondAction;
-use TaskForce\Logic\Actions\CancelAction;
-use TaskForce\Logic\Actions\StartAction;
-use TaskForce\Logic\Actions\FinishAction;
-use TaskForce\Logic\Actions\RefuseAction;
 use TaskForce\Logic\Enums\TaskAction;
 use TaskForce\Logic\Enums\TaskStatus;
 
@@ -45,7 +40,6 @@ class Task
      * Делегирует проверку доступных действий объекту TaskStateMachine.
      *
      * @param TaskStateMachine $machine Объект конечного автомата задания.
-     * @param string $status Текущий статус задания.
      * @param int $currentUserId ID текущего пользователя.
      *
      * @return array Список доступных действий.

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace TaskForce\Logic;
 
-use Exception;
 use TaskForce\Logic\Enums\TaskStatus;
 use TaskForce\Logic\Enums\TaskAction;
+use TaskForce\Logic\Exceptions\TaskException;
 
 /**
  * Управляет состояниями задания.
@@ -27,7 +27,7 @@ class TaskStateMachine
      */
     public function getAvailableActions(TaskStatus $status): array
     {
-        return array_filter(TaskAction::cases(), fn(TaskAction $action) => in_array($status, $action->availableInStatuses()));
+        return array_filter(TaskAction::cases(), fn(TaskAction $action) => in_array($status, $action->availableInStatuses(), true));
     }
 
     /**
@@ -60,12 +60,12 @@ class TaskStateMachine
      *
      * @return TaskStatus Новый статус задания.
      *
-     * @throws Exception Если действие недоступно для текущего статуса.
+     * @throws TaskException Если действие недоступно для текущего статуса.
      */
     public function transition(TaskStatus $current, TaskAction $action): TaskStatus
     {
-        if (!in_array($current, $action->availableInStatuses())) {
-            throw new Exception("Не доступно в статусе {$current->label()}");
+        if (!in_array($current, $action->availableInStatuses(), true)) {
+            throw new TaskException("Действие {$action->label()} недоступно для статуса {$current->label()}.");
         }
 
         return $action->resultingStatus();
