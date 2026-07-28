@@ -7,8 +7,8 @@ USE TaskForce;
 CREATE TABLE IF NOT EXISTS `city` (
     id   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(64) NOT NULL,
-    latitude     DECIMAL(10,7) NULL,
-    longitude    DECIMAL(10,7) NULL,
+    lat  DECIMAL(10,7) NULL,
+    long DECIMAL(10,7) NULL,
 
     UNIQUE KEY uq_name (name)
 );
@@ -35,10 +35,10 @@ CREATE TABLE IF NOT EXISTS `user` (
 CREATE TABLE IF NOT EXISTS `category` (
     id   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(64) NOT NULL,
-    slug VARCHAR(64) NOT NULL,
+    icon VARCHAR(64) NOT NULL,
 
     UNIQUE KEY uq_category_name (name),
-    UNIQUE KEY uq_category_slug (slug)
+    UNIQUE KEY uq_category_icon (icon)
 );
 
 CREATE TABLE IF NOT EXISTS `user_category` (
@@ -73,9 +73,8 @@ CREATE TABLE IF NOT EXISTS `task` (
     INDEX idx_executor_id (executor_id),
     INDEX idx_city_id (city_id),
 
-    CONSTRAINT fk_task_status FOREIGN KEY (status_id) REFERENCES `status` (id),
     CONSTRAINT fk_task_category FOREIGN KEY (category_id) REFERENCES `category` (id),
-    CONSTRAINT fk_task_author FOREIGN KEY (author_id) REFERENCES `user` (id),
+    CONSTRAINT fk_task_customer FOREIGN KEY (customer_id) REFERENCES `user` (id),
     CONSTRAINT fk_task_executor FOREIGN KEY (executor_id) REFERENCES `user` (id),
     CONSTRAINT fk_task_city FOREIGN KEY (city_id) REFERENCES `city` (id)
 );
