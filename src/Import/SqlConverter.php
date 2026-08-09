@@ -5,55 +5,34 @@ declare(strict_types=1);
 namespace TaskForce\Import;
 
 /**
- * Фщрматирование SQL-запросов из данных CSV.
+ * Форматирует данные CSV в SQL-запрос INSERT.
  */
 class SqlConverter
 {
     /**
-     * Преобразование массива записей в SQL-запрос INSERT.
+     * Форматирует одну запись в SQL-значения.
      *
-     * @param string $table Имя таблицы базы данных.
-     * @param array $rows Массив записей, где каждый элемент представляет строку данных.
+     * @param array $row Запись из CSV.
      *
-     * @return string Готовый SQL-запрос или пустая строка, если массив записей пуст.
+     * @return string Строка SQL со значениями.
      */
-    public function convert(string $table, array $rows): string
+    public function convertRow(array $row): string
     {
-        if (!$rows) {
-            return '';
-        }
+        $items = array_map(
+            static function ($value): string {
+                if ($value === '') {
+                    return 'NULL';
+                }
 
-        $columns = array_keys($rows[0]);
+                if (is_numeric($value)) {
+                    return (string) $value;
+                }
 
-        $sql = sprintf(
-            "INSERT INTO %s (%s) VALUES\n",
-            $table,
-            implode(', ', $columns)
+                return "'" . addslashes($value) . "'";
+            },
+            $row
         );
 
-        $values = [];
-
-        foreach ($rows as $row) {
-
-            $items = [];
-
-            foreach ($row as $value) {
-
-                if ($value === '') {
-                    $items[] = 'NULL';
-                } elseif (is_numeric($value)) {
-                    $items[] = $value;
-                } else {
-                    $items[] = "'" . addslashes($value) . "'";
-                }
-            }
-
-            $values[] = '(' . implode(', ', $items) . ')';
-        }
-
-        $sql .= implode(",\n", $values);
-        $sql .= ";\n";
-
-        return $sql;
+        return '(' . implode(', ', $items) . ')';
     }
 }

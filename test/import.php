@@ -9,13 +9,15 @@ use TaskForce\Import\ImportRunner;
 $importer = new ImportRunner();
 
 $importer->run(
-    'data/categories.csv',
+    __DIR__ . '/../data/categories.csv',
     'category',
-    'sql/category.sql'
+    __DIR__ . '/../sql/category.sql'
 );
 
 $importer->run(
-    'data/cities.csv',
+    __DIR__ . '/../data/cities.csv',
     'city',
-    'sql/city.sql'
+    __DIR__ . '/../sql/city.sql'
 );
+
+echo "Импорт завершен.\n";

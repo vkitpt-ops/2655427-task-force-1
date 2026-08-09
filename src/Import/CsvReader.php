@@ -4,34 +4,33 @@ declare(strict_types=1);
 
 namespace TaskForce\Import;
 
+use Generator;
 use SplFileObject;
 
 /**
- * Чтение CSV-файла и преобразование его содержимое в массив ассоциативных массивов.
+ * Читает CSV-файл и возвращает его содержимое построчно.
  */
 class CsvReader
 {
     /**
-     * Считывание данных из CSV-файла.
+     * Считывает данные из CSV-файла.
      *
-     * Первая строка файла используется в качестве заголовков столбцов.
-     * Каждая последующая строка преобразуется в ассоциативный массив,
-     * где ключами являются названия столбцов.
+     * Первая строка используется в качестве заголовков столбцов.
+     * Каждая последующая строка возвращается в виде ассоциативного массива.
      *
-     * @param string $file_name Путь к CSV-файлу.
+     * @param string $fileName Путь к CSV-файлу.
      *
-     * @return array Массив записей из CSV.
+     * @return Generator<int, array<string, string|null>>
      */
-    public function read(string $file_name): array
+    public function read(string $fileName): Generator
     {
-        $file = new SplFileObject($file_name);
+        $file = new SplFileObject($fileName);
 
         $file->setFlags(
             SplFileObject::READ_CSV |
             SplFileObject::SKIP_EMPTY
         );
 
-        $rows = [];
         $header = null;
 
         foreach ($file as $row) {
@@ -44,9 +43,7 @@ class CsvReader
                 continue;
             }
 
-            $rows[] = array_combine($header, $row);
+            yield array_combine($header, $row);
         }
-
-        return $rows;
     }
 }
