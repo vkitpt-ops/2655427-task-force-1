@@ -1,30 +1,34 @@
-# Файл с настройками для редактора.
-#
-# Если вы разрабатываете в редакторе WebStorm, BBEdit, Coda или SourceLair
-# этот файл уже поддерживается и не нужно производить никаких дополнительных
-# действий.
-#
-# Если вы ведёте разработку в другом редакторе, зайдите
-# на http://editorconfig.org и в разделе «Download a Plugin»
-# скачайте дополнение для вашего редактора.
+# editorconfig.org
 
 root = true
 
 [*]
 charset = utf-8
 end_of_line = lf
-indent_size = 2
-indent_style = space
 insert_final_newline = true
+indent_style = space
+indent_size = 4
 trim_trailing_whitespace = true
 
-[*.{go,py,rb,php}]
-indent_size = 4
-
-[Makefile]
-indent_size = 4
-indent_style = tab
-insert_final_newline = false
+[*.js]
+indent_size = 2
 
 [*.md]
 trim_trailing_whitespace = false
+
+[*.php]
+ij_php_space_before_short_closure_left_parenthesis = false
+ij_php_space_after_type_cast = true
+
+[*.yaml]
+indent_size = 2
+
+[*.yml]
+indent_size = 2
+
+[*.xml.dist]
+indent_size = 2
+
+[LICENSE*]
+indent_style = unset
+indent_size = unset
