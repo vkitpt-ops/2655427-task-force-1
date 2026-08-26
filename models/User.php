@@ -1,97 +1,234 @@
 <?php
 
-declare(strict_types=1);
-
 namespace app\models;
 
-use yii\base\BaseObject;
-use yii\web\IdentityInterface;
+use Yii;
 
-class User extends BaseObject implements IdentityInterface
+/**
+ * This is the model class for table "user".
+ *
+ * @property int $id
+ * @property string $user_role
+ * @property int $failed_tasks_count
+ * @property int $hide_contacts
+ * @property int|null $vk_id
+ * @property string $created_at
+ * @property string $email
+ * @property string $name
+ * @property string|null $password
+ * @property int $city_id
+ * @property string|null $avatar_path
+ * @property string|null $phone_number
+ * @property string|null $birthday
+ * @property string|null $telegram
+ *
+ * @property Category[] $categories
+ * @property City $city
+ * @property Feedback[] $feedbacks
+ * @property Feedback[] $feedbacks0
+ * @property Response[] $responses
+ * @property Task[] $tasks
+ * @property Task[] $tasks0
+ * @property Task[] $tasks1
+ * @property UserCategory[] $userCategories
+ */
+class User extends \yii\db\ActiveRecord
 {
-    public int|string $id = '';
-    public string $username = '';
-    public string $passwordHash = '';
-    public string $authKey = '';
-    public string $accessToken = '';
-    private static array $_users = [
-        '100' => [
-            'id' => '100',
-            'username' => 'admin',
-            // password: admin
-            'passwordHash' => '$2y$13$gYAywKSkhfZDq9FLNdm7buKnvlRxDexf5xipSMAxQPDUxpaptmZJu',
-            'authKey' => 'test100key',
-            'accessToken' => '100-token',
-        ],
-        '101' => [
-            'id' => '101',
-            'username' => 'demo',
-            // password: demo
-            'passwordHash' => '$2y$13$alRLq1PGVMlGYwS/Y3iy3ewQns1Z8ol8Iq6Zb5k7ZwEhblA1aL29y',
-            'authKey' => 'test101key',
-            'accessToken' => '101-token',
-        ],
-    ];
+
+    /**
+     * ENUM field values
+     */
+    const USER_ROLE_CUSTOMER = 'customer';
+    const USER_ROLE_EXECUTOR = 'executor';
+
     /**
      * {@inheritdoc}
      */
-    public static function findIdentity($id): static|null
+    public static function tableName()
     {
-        return isset(self::$_users[$id]) ? new static(self::$_users[$id]) : null;
+        return 'user';
     }
 
     /**
      * {@inheritdoc}
      */
-    public static function findIdentityByAccessToken($token, $type = null): static|null
+    public function rules()
     {
-        foreach (self::$_users as $user) {
-            if ($user['accessToken'] === $token) {
-                return new static($user);
-            }
-        }
-
-        return null;
+        return [
+            [['vk_id', 'password', 'avatar_path', 'phone_number', 'birthday', 'telegram'], 'default', 'value' => null],
+            [['hide_contacts'], 'default', 'value' => 0],
+            [['user_role', 'email', 'name', 'city_id'], 'required'],
+            [['user_role'], 'string'],
+            [['failed_tasks_count', 'hide_contacts', 'vk_id', 'city_id'], 'integer'],
+            [['created_at', 'birthday'], 'safe'],
+            [['email', 'name'], 'string', 'max' => 128],
+            [['password', 'avatar_path'], 'string', 'max' => 255],
+            [['phone_number'], 'string', 'max' => 11],
+            [['telegram'], 'string', 'max' => 64],
+            ['user_role', 'in', 'range' => array_keys(self::optsUserRole())],
+            [['email'], 'unique'],
+            [['vk_id'], 'unique'],
+            [['city_id'], 'exist', 'skipOnError' => true, 'targetClass' => City::class, 'targetAttribute' => ['city_id' => 'id']],
+        ];
     }
 
     /**
-     * Finds user by username
+     * {@inheritdoc}
+     */
+    public function attributeLabels()
+    {
+        return [
+            'id' => 'ID',
+            'user_role' => 'User Role',
+            'failed_tasks_count' => 'Failed Tasks Count',
+            'hide_contacts' => 'Hide Contacts',
+            'vk_id' => 'Vk ID',
+            'created_at' => 'Created At',
+            'email' => 'Email',
+            'name' => 'Name',
+            'password' => 'Password',
+            'city_id' => 'City ID',
+            'avatar_path' => 'Avatar Path',
+            'phone_number' => 'Phone Number',
+            'birthday' => 'Birthday',
+            'telegram' => 'Telegram',
+        ];
+    }
+
+    /**
+     * Gets query for [[Categories]].
      *
-     * @param string $username
-     * @return static|null
+     * @return \yii\db\ActiveQuery
      */
-    public static function findByUsername(string $username): static|null
+    public function getCategories()
     {
-        foreach (self::$_users as $user) {
-            if (strcasecmp($user['username'], $username) === 0) {
-                return new static($user);
-            }
-        }
-
-        return null;
+        return $this->hasMany(Category::class, ['id' => 'category_id'])->viaTable('user_category', ['user_id' => 'id']);
     }
 
     /**
-     * {@inheritdoc}
+     * Gets query for [[City]].
+     *
+     * @return \yii\db\ActiveQuery
      */
-    public function getId(): int|string
+    public function getCity()
     {
-        return $this->id;
+        return $this->hasOne(City::class, ['id' => 'city_id']);
     }
 
     /**
-     * {@inheritdoc}
+     * Gets query for [[Feedbacks]].
+     *
+     * @return \yii\db\ActiveQuery
      */
-    public function getAuthKey(): string|null
+    public function getFeedbacks()
     {
-        return $this->authKey;
+        return $this->hasMany(Feedback::class, ['author_id' => 'id']);
     }
 
     /**
-     * {@inheritdoc}
+     * Gets query for [[Feedbacks0]].
+     *
+     * @return \yii\db\ActiveQuery
      */
-    public function validateAuthKey($authKey): bool
+    public function getFeedbacks0()
     {
-        return $this->authKey === $authKey;
+        return $this->hasMany(Feedback::class, ['executor_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Responses]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getResponses()
+    {
+        return $this->hasMany(Response::class, ['user_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Tasks]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTasks()
+    {
+        return $this->hasMany(Task::class, ['author_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Tasks0]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTasks0()
+    {
+        return $this->hasMany(Task::class, ['executor_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Tasks1]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTasks1()
+    {
+        return $this->hasMany(Task::class, ['id' => 'task_id'])->viaTable('response', ['user_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[UserCategories]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUserCategories()
+    {
+        return $this->hasMany(UserCategory::class, ['user_id' => 'id']);
+    }
+
+
+    /**
+     * column user_role ENUM value labels
+     * @return string[]
+     */
+    public static function optsUserRole()
+    {
+        return [
+            self::USER_ROLE_CUSTOMER => 'customer',
+            self::USER_ROLE_EXECUTOR => 'executor',
+        ];
+    }
+
+    /**
+     * @return string
+     */
+    public function displayUserRole()
+    {
+        return self::optsUserRole()[$this->user_role];
+    }
+
+    /**
+     * @return bool
+     */
+    public function isUserRoleCustomer()
+    {
+        return $this->user_role === self::USER_ROLE_CUSTOMER;
+    }
+
+    public function setUserRoleToCustomer()
+    {
+        $this->user_role = self::USER_ROLE_CUSTOMER;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isUserRoleExecutor()
+    {
+        return $this->user_role === self::USER_ROLE_EXECUTOR;
+    }
+
+    public function setUserRoleToExecutor()
+    {
+        $this->user_role = self::USER_ROLE_EXECUTOR;
     }
 }
